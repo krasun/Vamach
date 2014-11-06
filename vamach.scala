@@ -1,3 +1,24 @@
+class Machine(p: String, s: String) {
+  val path: String = p
+  val status: String = s
+}
+
+object MachineManager {
+  var fileName = "machines"
+
+  /** **/
+  def loadMachines(): List[Machine] = {
+    val source = scala.io.Source.fromFile(fileName)
+    val lines = source.getLines.toList
+    source.close()
+    
+    lines.map(l => {
+      val Array(path, status) = l.split("""\s+""")
+      new Machine(path, status)  
+    })
+  } 
+}
+
 object Vamach {
   /** List of available commands. */
   val commands = Map(
@@ -13,12 +34,15 @@ object Vamach {
     * @param args First argument is command name, another arguments are command arguments 
     */
   def main(args: Array[String]) {
-    val (commandName, commandArguments) = (args(0), args.slice(1, args.length - 1)) 
     try {
+      val (commandName, commandArguments) = (args(0), args.slice(1, args.length - 1)) 
       commands(commandName)(commandArguments) 
     } catch {
+      case e: java.lang.ArrayIndexOutOfBoundsException => {
+        println("Please, specify command, available are: \"" + commands.keys.mkString("\", \"") + "\".")
+      }
       case e: NoSuchElementException => {
-          println("Command \"" + commandName + "\" does not exist, available are: \"" + commands.keys.mkString("\", \"") + "\".")
+        println("Command \"" + args(0) + "\" does not exist, available are: \"" + commands.keys.mkString("\", \"") + "\".")
       }     
     }
   }
@@ -60,7 +84,16 @@ object Vamach {
    * @param args Command arguments
    */
   def machineListCommand(args: Array[String]): Unit = {
-    println("list about machine command") 
+    val machines = MachineManager.loadMachines()
+    
+    if (machines.length > 0) {
+      println("-----")
+    }
+    for (machine <- machines) {
+      println("Path: \"" + machine.path + "\"")
+      println("Status: \"" + machine.status + "\"")
+      println("-----")
+    } 
   }
 }
 
