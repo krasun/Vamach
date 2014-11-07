@@ -1,21 +1,48 @@
-class Machine(p: String, s: String) {
-  val path: String = p
-  val status: String = s
+object Machine {
+  val UnknownStatus = "unknown"
+
+  def fromString(machineAsString: String): Machine = {
+      val Array(alias, path, status) = machineAsString.split("""\s+""")
+      new Machine(alias, path, status)  
+  }
+
+  def toString(machine: Machine): String = machine.alias + "\t" + machine.path + "\t" + machine.status
+}
+
+class Machine(val alias: String, val path: String, val status: String) {
+  override def hashCode = path.hashCode
+  
+  override def equals(other: Any) = other match { 
+    case that: Machine => this.path == that.path 
+    case _ => false 
+  }
+
+  override def toString(): String = Machine.toString(this)
 }
 
 object MachineManager {
   var fileName = "machines"
 
-  /** **/
   def loadMachines(): List[Machine] = {
     val source = scala.io.Source.fromFile(fileName)
     val lines = source.getLines.toList
     source.close()
-    
-    lines.map(l => {
-      val Array(path, status) = l.split("""\s+""")
-      new Machine(path, status)  
-    })
+  
+    lines.map(Machine.fromString _)
+  }
+
+  def addMachine(alias: String, path: String): Boolean = {
+    val machine = new Machine(alias, path, Machine.UnknownStatus)
+    val machines = loadMachines()
+    if (! machines.contains(machine)) {
+        val writer = new java.io.FileWriter(fileName, true) 
+        writer.write("\n" + machine) 
+        writer.close()
+
+        return true
+    } else {
+        return false
+    }
   } 
 }
 
@@ -35,7 +62,7 @@ object Vamach {
     */
   def main(args: Array[String]) {
     try {
-      val (commandName, commandArguments) = (args(0), args.slice(1, args.length - 1)) 
+      val (commandName, commandArguments) = (args(0), args.slice(1, args.length)) 
       commands(commandName)(commandArguments) 
     } catch {
       case e: java.lang.ArrayIndexOutOfBoundsException => {
@@ -52,7 +79,17 @@ object Vamach {
    * @param args Command arguments
    */
   def machineAddCommand(args: Array[String]): Unit =  {
-    println("add machine command")
+    try {
+      if (MachineManager.addMachine(args(0), args(1))) {
+        println("Machine was successfully added.")  
+      } else {
+        println("Machine was not added.")
+      }
+    } catch {
+      case e: java.lang.ArrayIndexOutOfBoundsException => {
+        println("Please, specify machine alias and path!")
+      }
+    }
   }
 
   /** Removes virtual machine to database.
@@ -87,9 +124,11 @@ object Vamach {
     val machines = MachineManager.loadMachines()
     
     if (machines.length > 0) {
+      println("List of machines:")
       println("-----")
     }
     for (machine <- machines) {
+      println("Alias: \"" + machine.alias + "\"")
       println("Path: \"" + machine.path + "\"")
       println("Status: \"" + machine.status + "\"")
       println("-----")
