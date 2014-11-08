@@ -1,15 +1,28 @@
+/** Machine companion object. */
 object Machine {
+  
+  /** Status is unknown if Machine has not been synchronized yet. */
   val UnknownStatus = "unknown"
 
+  /** Parses string and creates Machine instance.
+   *  
+   * @param machineAsString Tab-separated machine parameters: alias and path
+   */
   def fromString(machineAsString: String): Machine = {
       val Array(alias, path, status) = machineAsString.split("""\s+""")
       new Machine(alias, path, status)  
   }
 
+  /** Converts Machine instance to string.
+   *
+   * @param Machine Machine instance
+   */
   def toString(machine: Machine): String = machine.alias + "\t" + machine.path + "\t" + machine.status
 }
 
+/** Descibes Vagrant virtual machine. */
 class Machine(val alias: String, val path: String, val status: String) {
+  
   override def hashCode = path.hashCode
   
   override def equals(other: Any) = other match { 
@@ -20,9 +33,13 @@ class Machine(val alias: String, val path: String, val status: String) {
   override def toString(): String = Machine.toString(this)
 }
 
+/** Manages machines. */
 object MachineManager {
+  
+  /** Path to file with database of registered machines. */
   var fileName = "machines"
 
+  /** Load machines. */
   def loadMachines(): List[Machine] = {
     val source = scala.io.Source.fromFile(fileName)
     val lines = source.getLines.toList
@@ -31,6 +48,7 @@ object MachineManager {
     lines.map(Machine.fromString _)
   }
 
+  /** Adds machine to database. */
   def addMachine(alias: String, path: String): Boolean = {
     val machine = new Machine(alias, path, Machine.UnknownStatus)
     val machines = loadMachines()
@@ -44,13 +62,26 @@ object MachineManager {
         return false
     }
   } 
+
+  /** Removes machine by alias from database. */
+  def detachMachine(alias: String): Unit = {
+    val updatedMachines = loadMachines().filter(m => m.alias != alias)
+
+    val writer = new java.io.FileWriter(fileName, false)
+    for (m <- updatedMachines) {
+      writer.write("\n" + m) 
+    }
+    writer.close()
+  }
 }
 
+/** Manager of local Vagrant machines. */
 object Vamach {
+
   /** List of available commands. */
-  val commands = Map(
+  val commands = Map(1
     "add" -> machineAddCommand _,
-    "remove" -> machineRemoveCommand _, 
+    "detach" -> machineDetachCommand _, 
     "status" -> machineStatusCommand _,
     "sync-status" -> machineSyncStatusCommand _, 
     "list" -> machineListCommand _
@@ -92,12 +123,19 @@ object Vamach {
     }
   }
 
-  /** Removes virtual machine to database.
+  /** Removes virtual machine from database.
    *
    * @param args Command arguments
    */
-  def machineRemoveCommand(args: Array[String]): Unit = {
-    println("remove machine command")
+  def machineDetachCommand(args: Array[String]): Unit = {
+    try {
+        MachineManager.detachMachine(args(0))
+        println("Machine was successfully detached.")
+    } catch {
+      case e: java.lang.ArrayIndexOutOfBoundsException => {
+        println("Please, specify machine alias!")
+      }
+    }
   }
 
   /** Shows status of virtual machines.

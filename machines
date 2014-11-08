@@ -1,5 +1,5 @@
+
 sample	/some/path/to/sample/machine	running
 another	/some/path/to/another/machine	suspend
-user	/some/path	unknown	
-user	/some/path1	unknown
-user	/some/path2	unknown
+sample	/some/path/to/sample/machine	running
+another	/some/path/to/another/machine	suspend
