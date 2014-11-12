@@ -1,4 +1,4 @@
 Vamach
 ======
 
-Simple managing scripts for my local Vagrant machines.
+Scripts for all ocasions.
